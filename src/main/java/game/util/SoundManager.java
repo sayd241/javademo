@@ -1,12 +1,8 @@
 package game.util;
 
-import javax.sound.sampled.*;
-import java.io.BufferedInputStream;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import javax.sound.sampled.*;
 
 public class SoundManager {
     private final Map<String, Clip> soundClips;
@@ -27,7 +23,7 @@ public class SoundManager {
             loadSound("lose", "/assets/lose.wav");
             
             // Load background music
-            loadBackgroundMusic("/assets/bg_music.wav");
+            loadBackgroundMusic("/assets/background.wav");
         } catch (Exception e) {
             System.err.println("Error loading sounds: " + e.getMessage());
         }

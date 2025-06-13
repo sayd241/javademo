@@ -2,8 +2,9 @@ package game.ui;
 
 import game.util.Constants;
 import game.util.SoundManager;
-import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
 
 public class GameFrame extends JFrame {
     private CardLayout cardLayout;
@@ -11,6 +12,8 @@ public class GameFrame extends JFrame {
     private MenuPanel menuPanel;
     private GamePanel gamePanel;
     private SoundManager soundManager;
+
+    private Point mouseOffset;
 
     public GameFrame() {
         try {
@@ -38,6 +41,7 @@ public class GameFrame extends JFrame {
     }
 
     private void initializeFrame() {
+        setUndecorated(true); // Make frame undecorated first
         setTitle(Constants.GAME_TITLE);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setPreferredSize(Constants.WINDOW_SIZE);
@@ -50,6 +54,9 @@ public class GameFrame extends JFrame {
     }
 
     private void setupPanels() {
+        // Create title bar panel with close button
+        JPanel titleBar = createTitleBar();
+        
         cardLayout = new CardLayout();
         mainContainer = new JPanel(cardLayout);
         mainContainer.setOpaque(false);
@@ -60,10 +67,19 @@ public class GameFrame extends JFrame {
         mainContainer.add(menuPanel, "MENU");
         mainContainer.add(gamePanel, "GAME");
 
-        // Make the content pane transparent
+        // Setup main content pane with title bar and game content
         JPanel contentPane = new JPanel(new BorderLayout());
         contentPane.setOpaque(false);
-        contentPane.add(mainContainer);
+        
+        // Add title bar at the top
+        contentPane.add(titleBar, BorderLayout.NORTH);
+        
+        // Add main game container
+        contentPane.add(mainContainer, BorderLayout.CENTER);
+        
+        // Add a border around the frame
+        contentPane.setBorder(BorderFactory.createLineBorder(new Color(50, 50, 50), 2));
+        
         setContentPane(contentPane);
 
         // Make the frame background transparent
@@ -91,5 +107,49 @@ public class GameFrame extends JFrame {
 
     public SoundManager getSoundManager() {
         return soundManager;
+    }
+
+    private JPanel createTitleBar() {
+        JPanel titleBar = new JPanel(new BorderLayout());
+        titleBar.setBackground(new Color(50, 50, 50));
+        titleBar.setPreferredSize(new Dimension(getWidth(), 30));
+        
+        // Add window title
+        JLabel title = new JLabel("Rock Paper Scissors");
+        title.setForeground(Color.WHITE);
+        title.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
+        titleBar.add(title, BorderLayout.WEST);
+
+        // Add close button
+        JButton closeButton = new JButton("X");
+        closeButton.setForeground(Color.WHITE);
+        closeButton.setBackground(new Color(50, 50, 50));
+        closeButton.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+        closeButton.setFocusPainted(false);
+        closeButton.addActionListener(e -> System.exit(0));
+        titleBar.add(closeButton, BorderLayout.EAST);
+
+        // Add drag functionality
+        titleBar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                mouseOffset = e.getPoint();
+            }
+        });
+
+        titleBar.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (mouseOffset != null) {
+                    Point currentLocation = getLocation();
+                    setLocation(
+                        currentLocation.x + e.getX() - mouseOffset.x,
+                        currentLocation.y + e.getY() - mouseOffset.y
+                    );
+                }
+            }
+        });
+
+        return titleBar;
     }
 }
