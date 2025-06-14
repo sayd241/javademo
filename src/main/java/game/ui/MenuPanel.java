@@ -91,6 +91,8 @@ public class MenuPanel extends JPanel {
         // Select PVC by default
         updateButtonSelection(pvcButton, true);
         updateButtonSelection(pvpButton, false);
+        selectedGameMode = "PVC";
+        selectedDifficulty = "EASY";  // Set default difficulty for PVC mode
         
         return panel;
     }
@@ -196,7 +198,14 @@ public class MenuPanel extends JPanel {
         button.addActionListener(e -> {
             selectedDifficulty = value;
             parentFrame.getSoundManager().playSound("click");
-            updateStartButtonState();
+            // Update button selection for all difficulty buttons
+            Component[] components = ((JPanel)button.getParent()).getComponents();
+            for (Component comp : components) {
+                if (comp instanceof JButton jButton) {
+                    jButton.setBackground(new Color(50, 50, 50));
+                }
+            }
+            button.setBackground(new Color(0, 120, 215));
         });
         
         button.addMouseListener(new MouseAdapter() {
@@ -233,9 +242,17 @@ public class MenuPanel extends JPanel {
         startButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         startButton.addActionListener(e -> {
-            if (!selectedGameMode.isEmpty() && 
-                (selectedGameMode.equals("PVP") || !selectedDifficulty.isEmpty())) {
-                parentFrame.startGame(selectedGameMode, selectedDifficulty);
+            System.out.println("Starting game with mode: " + selectedGameMode + ", difficulty: " + selectedDifficulty);
+            if (!selectedGameMode.isEmpty()) {
+                // For PVP, we don't need difficulty
+                if (selectedGameMode.equals("PVP")) {
+                    parentFrame.startGame("PVP", "NONE");
+                } else {
+                    // For PVC, we need a difficulty
+                    if (!selectedDifficulty.isEmpty()) {
+                        parentFrame.startGame("PVC", selectedDifficulty);
+                    }
+                }
             }
         });
         

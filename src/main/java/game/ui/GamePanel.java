@@ -1,15 +1,13 @@
 package game.ui;
 
-import game.model.GameLogic;
 import game.model.Choice;
-import game.util.Constants;
+import game.model.GameLogic;
 import game.util.BackgroundManager;
-import javax.swing.*;
+import game.util.Constants;
 import java.awt.*;
-import java.awt.geom.Rectangle2D;
-import java.awt.geom.RoundRectangle2D;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.*;
 
 public class GamePanel extends JPanel {
     private final GameFrame parentFrame;
@@ -22,6 +20,10 @@ public class GamePanel extends JPanel {
     private Timer animationTimer;
     private Choice playerChoice;
     private Choice computerChoice;
+    private boolean isPVPMode = false;
+    private boolean isPlayer1Turn = true;
+    private Choice player1Choice;
+    private Choice player2Choice;
 
     public GamePanel(GameFrame parent) {
         this.parentFrame = parent;
@@ -38,7 +40,7 @@ public class GamePanel extends JPanel {
         
         setupComponents();
         loadImages();
-        resetGame();
+        resetGame("PVC", "EASY"); // Set default mode and difficulty
     }
     
     private void setupComponents() {
@@ -70,15 +72,26 @@ public class GamePanel extends JPanel {
         backButton.addActionListener(event -> parentFrame.switchToPanel("MENU"));
         
         JButton playAgainButton = createStyledButton("Play Again");
-        playAgainButton.addActionListener(event -> resetGame());
+        playAgainButton.addActionListener(event -> {
+            if (gameLogic != null) {
+                resetGame(gameLogic.getGameMode(), gameLogic.getDifficulty());
+            }
+        });
         
         navPanel.add(backButton);
         navPanel.add(playAgainButton);
         
+        // Create a center panel to hold result and choices
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+        centerPanel.setOpaque(false);
+        centerPanel.add(resultLabel);
+        centerPanel.add(Box.createRigidArea(new Dimension(0, 20))); // Add spacing
+        centerPanel.add(choicesPanel);
+        
         // Add all panels to main container
         add(scorePanel, BorderLayout.NORTH);
-        add(resultLabel, BorderLayout.CENTER);
-        add(choicesPanel, BorderLayout.SOUTH);
+        add(centerPanel, BorderLayout.CENTER);
         add(navPanel, BorderLayout.SOUTH);
     }
       private void loadImages() {
@@ -155,37 +168,94 @@ public class GamePanel extends JPanel {
         }
     }
     
-    private void makeChoice(Choice choice) {
-        playerChoice = choice;
-        computerChoice = gameLogic.getComputerChoice();
+    public void resetGame(String gameMode, String difficulty) {
+        System.out.println("Resetting game with mode: " + gameMode + ", difficulty: " + difficulty);
         
-        // Display the choices and determine winner
-        displayResult();
-    }
-    
-    private void displayResult() {
-        if (playerChoice != null && computerChoice != null) {
-            String result = gameLogic.determineWinner(playerChoice, computerChoice);
-            resultLabel.setText(result);
-            updateScores(result);
-        }
-    }
-    
-    private void updateScores(String result) {
-        if (result.contains("Win")) {
-            int score = Integer.parseInt(player1ScoreLabel.getText().split(": ")[1]) + 1;
-            player1ScoreLabel.setText("Player 1: " + score);
-        } else if (result.contains("Lose")) {
-            int score = Integer.parseInt(player2ScoreLabel.getText().split(": ")[1]) + 1;
-            player2ScoreLabel.setText("Player 2: " + score);
-        }
-    }
-    
-    public void resetGame() {
+        // Initialize game state with selected mode and difficulty
+        gameLogic = new GameLogic(gameMode, difficulty);
         playerChoice = null;
         computerChoice = null;
-        resultLabel.setText("");
-        gameLogic = new GameLogic();
+        
+        // Reset UI elements
+        player1ScoreLabel.setText("Player 1: 0");
+        player2ScoreLabel.setText("Computer: 0");
+        resultLabel.setText("Choose your move!");
+        
+        // Enable all choice buttons
+        for (Component comp : choicesPanel.getComponents()) {
+            if (comp instanceof JButton) {
+                comp.setEnabled(true);
+            }
+        }
+        
+        // Make sure everything is visible
+        choicesPanel.setVisible(true);
+        revalidate();
+        repaint();
+    }
+
+    private void makeChoice(Choice choice) {
+        try {
+            System.out.println("Player chose: " + choice);
+            playerChoice = choice;
+            
+            if (gameLogic.getGameMode().equals("PVC")) {
+                // Computer opponent
+                computerChoice = gameLogic.getComputerChoice();
+                System.out.println("Computer chose: " + computerChoice);
+                
+                // Play sound effect
+                parentFrame.getSoundManager().playSound("click");
+                
+                // Display the choices and determine winner
+                String result = gameLogic.determineWinner(playerChoice, computerChoice);
+                System.out.println("Result: " + result);
+                
+                // Update UI
+                resultLabel.setText(result);
+                if (result.contains("Win")) {
+                    parentFrame.getSoundManager().playSound("win");
+                    updateScores(1, 0);
+                } else if (result.contains("Lose")) {
+                    parentFrame.getSoundManager().playSound("lose");
+                    updateScores(0, 1);
+                }
+            } else {
+                // PVP mode - wait for second player's choice
+                if (isPlayer1Turn) {
+                    player1Choice = choice;
+                    resultLabel.setText("Player 2, it's your turn!");
+                } else {
+                    player2Choice = choice;
+                    // Both players have made their choices, determine winner
+                    String result = gameLogic.determineWinner(player1Choice, player2Choice);
+                    resultLabel.setText("Result: " + result);
+                    
+                    // Update scores based on result
+                    if (result.equals("Player 1 Wins!")) {
+                        updateScores(1, 0);
+                    } else if (result.equals("Player 2 Wins!")) {
+                        updateScores(0, 1);
+                    }
+                }
+                isPlayer1Turn = !isPlayer1Turn; // Switch turn
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error in makeChoice: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void updateScores(int player1Score, int player2Score) {
+        if (player1Score > 0) {
+            int currentScore = Integer.parseInt(player1ScoreLabel.getText().split(": ")[1]);
+            player1ScoreLabel.setText("Player 1: " + (currentScore + player1Score));
+        }
+        if (player2Score > 0) {
+            int currentScore = Integer.parseInt(player2ScoreLabel.getText().split(": ")[1]);
+            player2ScoreLabel.setText("Computer: " + (currentScore + player2Score));
+        }
     }
     
     private JButton createStyledButton(String text) {

@@ -97,7 +97,7 @@ public class GameFrame extends JFrame {
     }
 
     public void startGame(String gameMode, String difficulty) {
-        gamePanel.resetGame();
+        gamePanel.resetGame(gameMode, difficulty);
         switchToPanel("GAME");
     }
 

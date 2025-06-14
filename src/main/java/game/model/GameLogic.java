@@ -1,11 +1,11 @@
 package game.model;
 
 import game.util.Constants;
-import java.util.Random;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Handles the core game logic and AI decision making.
@@ -35,6 +35,10 @@ public class GameLogic {
     }
     
     public Choice getComputerChoice() {
+        if (gameMode.equals("PVP")) {
+            return null; // Not used in PVP mode
+        }
+
         Choice[] choices = Choice.values();
         
         switch (difficulty.toUpperCase()) {
@@ -69,6 +73,15 @@ public class GameLogic {
         }
     }
     
+    public String getGameMode() {
+        return gameMode;
+    }
+    
+    public String getDifficulty() {
+        return difficulty;
+    }
+    
+    // Determine winner and update scores
     public String determineWinner(Choice playerChoice, Choice computerChoice) {
         if (playerChoice == computerChoice) {
             return "Draw!";
